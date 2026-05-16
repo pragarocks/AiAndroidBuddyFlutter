@@ -115,8 +115,8 @@ class DashboardScreen extends ConsumerWidget {
       return;
     }
     await FlutterOverlayWindow.showOverlay(
-      height: WindowSize.matchParent,
-      width: WindowSize.matchParent,
+      height: -1, // WindowSize.matchParent
+      width: -1,  // WindowSize.matchParent
       alignment: OverlayAlignment.center,
       visibility: NotificationVisibility.visibilityPublic,
       positionGravity: PositionGravity.auto,
