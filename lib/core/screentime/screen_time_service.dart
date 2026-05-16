@@ -51,7 +51,7 @@ class ScreenTimeService {
     final stats = await getUsageStats(hours: hours);
     return stats
         .where((a) => _isSocialApp(a.packageName))
-        .fold(0, (sum, a) => sum + a.usageMinutes);
+        .fold<int>(0, (sum, a) => sum + a.usageMinutes);
   }
 
   static bool _isSocialApp(String pkg) {

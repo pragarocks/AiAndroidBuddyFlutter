@@ -115,8 +115,8 @@ class DashboardScreen extends ConsumerWidget {
       return;
     }
     await FlutterOverlayWindow.showOverlay(
-      height: WindowSize.fullCover,
-      width: WindowSize.fullCover,
+      height: WindowSize.matchParent,
+      width: WindowSize.matchParent,
       alignment: OverlayAlignment.center,
       visibility: NotificationVisibility.visibilityPublic,
       positionGravity: PositionGravity.auto,
@@ -253,7 +253,8 @@ class _AddReminderDialog extends StatefulWidget {
 
 class _AddReminderDialogState extends State<_AddReminderDialog> {
   ReminderType _type = ReminderType.water;
-  TimeOfDay _time = const TimeOfDay(hour: 10, minute: 0);
+  int _hour = 10;
+  int _minute = 0;
   final _labelCtrl = TextEditingController();
 
   @override
@@ -280,11 +281,16 @@ class _AddReminderDialogState extends State<_AddReminderDialog> {
           const SizedBox(height: 12),
           ListTile(
             title: const Text('Time'),
-            subtitle: Text(_time.toString()),
+            subtitle: Text('${_hour.toString().padLeft(2,'0')}:${_minute.toString().padLeft(2,'0')}'),
             trailing: const Icon(Icons.access_time),
             onTap: () async {
-              final h = (_time.hour + 1) % 24;
-              setState(() => _time = TimeOfDay(hour: h, minute: _time.minute));
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(hour: _hour, minute: _minute),
+              );
+              if (picked != null) {
+                setState(() { _hour = picked.hour; _minute = picked.minute; });
+              }
             },
           ),
         ],
@@ -297,7 +303,8 @@ class _AddReminderDialogState extends State<_AddReminderDialog> {
               id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
               label: _labelCtrl.text.isNotEmpty ? _labelCtrl.text : _type.name,
               type: _type,
-              time: _time,
+              hour: _hour,
+              minute: _minute,
               weekdays: List.filled(7, true),
             ));
             Navigator.pop(context);

@@ -90,6 +90,8 @@ class ReminderManager extends StateNotifier<List<Reminder>> {
       _nextInstanceOfTime(reminder.hour, reminder.minute),
       NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
