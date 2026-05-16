@@ -21,9 +21,9 @@ android {
     defaultConfig {
         applicationId "com.pocketpet"
         minSdk 26
-        targetSdk flutter.targetSdkVersion
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        targetSdk 35
+        versionCode 1
+        versionName "1.0.0"
     }
 
     buildTypes {
