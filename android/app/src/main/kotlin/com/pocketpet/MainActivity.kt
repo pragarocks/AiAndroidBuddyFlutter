@@ -76,6 +76,10 @@ class MainActivity : FlutterActivity() {
                         startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
                         result.success(null)
                     }
+                    "openAccessibilitySettings" -> {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }
