@@ -3,17 +3,17 @@ import 'package:pocket_pet/core/reminders/reminder.dart';
 
 void main() {
   group('Reminder', () {
-    const baseReminder = Reminder(
+    const base = Reminder(
       id: 'test_water',
       label: 'Drink water',
       type: ReminderType.water,
-      time: TimeOfDay(hour: 10, minute: 0),
+      hour: 10,
+      minute: 0,
       weekdays: [true, true, true, true, true, false, false],
     );
 
     test('speakText returns type default when no customText', () {
-      expect(baseReminder.speakText,
-          contains('Drink a glass of water'));
+      expect(base.speakText, contains('Drink a glass of water'));
     });
 
     test('speakText returns customText when set', () {
@@ -21,7 +21,8 @@ void main() {
         id: 'c1',
         label: 'Custom',
         type: ReminderType.custom,
-        time: TimeOfDay(hour: 9, minute: 0),
+        hour: 9,
+        minute: 0,
         weekdays: [true, true, true, true, true, true, true],
         customText: 'Take your vitamins!',
       );
@@ -29,18 +30,19 @@ void main() {
     });
 
     test('copyWith toggles enabled', () {
-      final disabled = baseReminder.copyWith(enabled: false);
+      final disabled = base.copyWith(enabled: false);
       expect(disabled.enabled, isFalse);
-      expect(disabled.id, baseReminder.id);
+      expect(disabled.id, base.id);
     });
 
     test('toJson / fromJson round-trip', () {
-      final json = baseReminder.toJson();
+      final json = base.toJson();
       final restored = Reminder.fromJson(json);
-      expect(restored.id, baseReminder.id);
-      expect(restored.type, baseReminder.type);
-      expect(restored.time.hour, baseReminder.time.hour);
-      expect(restored.enabled, baseReminder.enabled);
+      expect(restored.id, base.id);
+      expect(restored.type, base.type);
+      expect(restored.hour, base.hour);
+      expect(restored.minute, base.minute);
+      expect(restored.enabled, base.enabled);
     });
 
     test('every ReminderType has a non-empty default speak text', () {
@@ -49,7 +51,8 @@ void main() {
           id: type.name,
           label: type.name,
           type: type,
-          time: const TimeOfDay(hour: 9, minute: 0),
+          hour: 9,
+          minute: 0,
           weekdays: List.filled(7, true),
         );
         expect(r.speakText.isNotEmpty, isTrue,
@@ -57,9 +60,9 @@ void main() {
       }
     });
 
-    test('TimeOfDay toString pads correctly', () {
-      expect(const TimeOfDay(hour: 9, minute: 5).toString(), '09:05');
-      expect(const TimeOfDay(hour: 14, minute: 0).toString(), '14:00');
+    test('time getter returns correct TimeOfDay', () {
+      expect(base.time.hour, 10);
+      expect(base.time.minute, 0);
     });
   });
 }

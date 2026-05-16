@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import '../tts/tts_engine.dart';
 import '../pet/pet_state.dart';
 import '../pet/pet_state_machine.dart';
@@ -10,8 +12,7 @@ import 'reminder.dart';
 class ReminderManager extends StateNotifier<List<Reminder>> {
   final TtsEngine _tts;
   final PetStateMachine _stateMachine;
-  final FlutterLocalNotificationsPlugin _notifications =
-      FlutterLocalNotificationsPlugin();
+  final _notifications = FlutterLocalNotificationsPlugin();
 
   static const _prefKey = 'reminders_v1';
 
@@ -25,12 +26,20 @@ class ReminderManager extends StateNotifier<List<Reminder>> {
   }
 
   Future<void> _init() async {
-    // Initialize local notifications
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    tz.initializeTimeZones();
+
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     await _notifications.initialize(
       const InitializationSettings(android: androidSettings),
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
+
+    // Request exact-alarm permission (Android 12+)
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
 
     await _loadFromPrefs();
     _scheduleAll();
@@ -63,12 +72,6 @@ class ReminderManager extends StateNotifier<List<Reminder>> {
 
   void _schedule(Reminder reminder) {
     final id = reminder.id.hashCode.abs() % 100000;
-    final now = DateTime.now();
-    var scheduled = DateTime(
-        now.year, now.month, now.day, reminder.time.hour, reminder.time.minute);
-    if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
-    }
 
     final androidDetails = AndroidNotificationDetails(
       'reminders_${reminder.type.name}',
@@ -76,24 +79,32 @@ class ReminderManager extends StateNotifier<List<Reminder>> {
       channelDescription: 'Wellness reminders from your pet',
       importance: Importance.high,
       priority: Priority.high,
-      playSound: false, // pet speaks it via TTS instead
+      playSound: false,
     );
 
+    // Schedule repeating daily at the reminder's time
     _notifications.zonedSchedule(
       id,
       'PocketPet 🐾',
       reminder.label,
-      _toTZDateTime(scheduled),
+      _nextInstanceOfTime(reminder.hour, reminder.minute),
       NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
+  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(
+        tz.local, now.year, now.month, now.day, hour, minute);
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
+  }
+
   void _onNotificationTapped(NotificationResponse response) {
-    // When the user taps the notification, pet speaks the reminder
     final reminder = state.firstWhere(
       (r) => r.id.hashCode.abs() % 100000 == response.id,
       orElse: () => state.first,
@@ -102,17 +113,17 @@ class ReminderManager extends StateNotifier<List<Reminder>> {
     _tts.speak(reminder.speakText);
   }
 
-  /// Called from WorkManager to also speak reminders in the background.
+  /// Called from WorkManager every minute to speak due reminders as backup.
   Future<void> speakDueReminders() async {
     final now = DateTime.now();
     for (final reminder in state) {
       if (!reminder.enabled) continue;
-      final weekdayIndex = now.weekday - 1; // Dart: Mon=1 → 0-based index
+      final weekdayIndex = now.weekday - 1;
       if (!reminder.weekdays[weekdayIndex]) continue;
-      if (reminder.time.hour == now.hour && reminder.time.minute == now.minute) {
+      if (reminder.hour == now.hour && reminder.minute == now.minute) {
         _stateMachine.send(const ReminderSpoken());
         await _tts.speak(reminder.speakText);
-        break; // speak one at a time
+        break;
       }
     }
   }
@@ -124,7 +135,9 @@ class ReminderManager extends StateNotifier<List<Reminder>> {
   }
 
   Future<void> toggle(String id) async {
-    state = state.map((r) => r.id == id ? r.copyWith(enabled: !r.enabled) : r).toList();
+    state = state
+        .map((r) => r.id == id ? r.copyWith(enabled: !r.enabled) : r)
+        .toList();
     final reminder = state.firstWhere((r) => r.id == id);
     if (reminder.enabled) {
       _schedule(reminder);
@@ -140,53 +153,48 @@ class ReminderManager extends StateNotifier<List<Reminder>> {
     await _saveToPrefs();
   }
 
-  // Helpers
-  static _TZDateTime _toTZDateTime(DateTime dt) => _TZDateTime.from(dt);
-
   static List<Reminder> _defaultReminders() => [
-    Reminder(
-      id: 'water_default',
-      label: 'Drink water 💧',
-      type: ReminderType.water,
-      time: const TimeOfDay(hour: 10, minute: 0),
-      weekdays: List.filled(7, true),
-    ),
-    Reminder(
-      id: 'water_pm',
-      label: 'Afternoon water 💧',
-      type: ReminderType.water,
-      time: const TimeOfDay(hour: 14, minute: 0),
-      weekdays: List.filled(7, true),
-    ),
-    Reminder(
-      id: 'eye_break',
-      label: 'Eye break 👁️',
-      type: ReminderType.eyeBreak,
-      time: const TimeOfDay(hour: 15, minute: 30),
-      weekdays: [true, true, true, true, true, false, false], // weekdays
-    ),
-    Reminder(
-      id: 'stretch',
-      label: 'Stretch break 🧘',
-      type: ReminderType.movement,
-      time: const TimeOfDay(hour: 12, minute: 0),
-      weekdays: List.filled(7, true),
-    ),
-    Reminder(
-      id: 'sleep',
-      label: 'Wind down 🌙',
-      type: ReminderType.sleep,
-      time: const TimeOfDay(hour: 22, minute: 30),
-      weekdays: List.filled(7, true),
-    ),
-  ];
-}
-
-// Minimal TZDateTime shim (timezone package would be full replacement)
-class _TZDateTime {
-  final DateTime _dt;
-  const _TZDateTime._(this._dt);
-  static _TZDateTime from(DateTime dt) => _TZDateTime._(dt);
+        const Reminder(
+          id: 'water_am',
+          label: 'Morning water 💧',
+          type: ReminderType.water,
+          hour: 10,
+          minute: 0,
+          weekdays: [true, true, true, true, true, true, true],
+        ),
+        const Reminder(
+          id: 'water_pm',
+          label: 'Afternoon water 💧',
+          type: ReminderType.water,
+          hour: 14,
+          minute: 0,
+          weekdays: [true, true, true, true, true, true, true],
+        ),
+        const Reminder(
+          id: 'eye_break',
+          label: 'Eye break 👁️',
+          type: ReminderType.eyeBreak,
+          hour: 15,
+          minute: 30,
+          weekdays: [true, true, true, true, true, false, false],
+        ),
+        const Reminder(
+          id: 'stretch',
+          label: 'Stretch break 🧘',
+          type: ReminderType.movement,
+          hour: 12,
+          minute: 0,
+          weekdays: [true, true, true, true, true, true, true],
+        ),
+        const Reminder(
+          id: 'sleep',
+          label: 'Wind down 🌙',
+          type: ReminderType.sleep,
+          hour: 22,
+          minute: 30,
+          weekdays: [true, true, true, true, true, true, true],
+        ),
+      ];
 }
 
 final reminderManagerProvider =

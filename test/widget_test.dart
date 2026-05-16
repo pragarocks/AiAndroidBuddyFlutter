@@ -27,8 +27,11 @@ void main() {
     test('Default reminder speak texts are non-empty', () {
       for (final t in ReminderType.values) {
         final r = Reminder(
-          id: t.name, label: t.name, type: t,
-          time: const TimeOfDay(hour: 9, minute: 0),
+          id: t.name,
+          label: t.name,
+          type: t,
+          hour: 9,
+          minute: 0,
           weekdays: List.filled(7, true),
         );
         expect(r.speakText.isNotEmpty, isTrue);

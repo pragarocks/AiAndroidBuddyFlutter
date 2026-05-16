@@ -42,6 +42,9 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
 
+  # Timezone — required by flutter_local_notifications for scheduled alarms
+  timezone: ^0.9.4
+
   # Utilities
   collection: ^1.18.0
   intl: ^0.19.0
