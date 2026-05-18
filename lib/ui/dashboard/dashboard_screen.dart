@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import '../../core/nudge/nudge_scheduler.dart';
 import '../../core/personality/pet_profile.dart';
 import '../../core/personality/pet_profile_repository.dart';
+import '../../core/pet/pet_installer.dart';
 import '../../core/reminders/reminder.dart';
 import '../../core/reminders/reminder_manager.dart';
 import '../../core/tts/tts_engine.dart';
 
 // ── Pet catalogue ──────────────────────────────────────────────────────────
 const _kPets = [
-  ('boba',        'Boba',       '🟣', 'blob'),
   ('axobotl',     'Axobotl',    '🐸', 'axolotl'),
   ('bitboy',      'Bitboy',     '🤖', 'robot'),
   ('nova_byte',   'Nova Byte',  '⭐', 'star'),
@@ -247,7 +249,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   static String _petEmoji(String id) => switch (id) {
-    'boba'       => '🟣',
     'axobotl'    => '🐸',
     'bitboy'     => '🤖',
     'nova_byte'  => '⭐',
@@ -355,12 +356,57 @@ class _ReminderTile extends ConsumerWidget {
 }
 
 // ── Settings sheet ────────────────────────────────────────────────────────
-class _SettingsSheet extends ConsumerWidget {
+class _SettingsSheet extends ConsumerStatefulWidget {
   final VoidCallback onPetChanged;
   const _SettingsSheet({required this.onPetChanged});
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final current = ref.watch(petProfileProvider).valueOrNull?.petId ?? 'boba';
+  ConsumerState<_SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
+  List<String> _customPets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomPets();
+  }
+
+  Future<void> _loadCustomPets() async {
+    final pets = await PetInstaller.getInstalledCustomPets();
+    setState(() => _customPets = pets);
+  }
+
+  Future<void> _installCustomPet() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final zipPath = result.files.single.path!;
+        final newPetId = await PetInstaller.installFromZip(zipPath);
+        await _loadCustomPets();
+        
+        // Auto select the new pet
+        final repo = ref.read(petProfileRepositoryProvider);
+        final cur = await repo.load();
+        await repo.save(cur.copyWith(petId: newPetId, species: 'custom'));
+        ref.invalidate(petProfileProvider);
+        widget.onPetChanged();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to install pet: $e', style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final current = ref.watch(petProfileProvider).valueOrNull?.petId ?? 'axobotl';
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
       child: Column(
@@ -372,35 +418,60 @@ class _SettingsSheet extends ConsumerWidget {
           )),
           const SizedBox(height: 16),
           SizedBox(
-            height: 340,
-            child: ListView(children: _kPets.map((p) {
-              final (id, name, emoji, species) = p;
-              final selected = current == id;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: selected ? _kAccent.withOpacity(0.15) : _kSurface,
-                  border: Border.all(color: selected ? _kAccent : _kBorder),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading: Text(emoji, style: const TextStyle(fontSize: 30)),
-                  title: Text(name, style: const TextStyle(color: _kText, fontWeight: FontWeight.w600)),
-                  subtitle: Text(species, style: const TextStyle(color: _kSubtext, fontSize: 12)),
-                  trailing: selected ? const Icon(Icons.check_circle, color: _kAccent) : null,
-                  onTap: selected ? null : () async {
-                    final repo = ref.read(petProfileRepositoryProvider);
-                    final cur  = await repo.load();
-                    await repo.save(cur.copyWith(petId: id, species: species));
-                    ref.invalidate(petProfileProvider);
-                    onPetChanged();
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                ),
-              );
-            }).toList()),
+            height: 300,
+            child: ListView(
+              children: [
+                ..._kPets.map((p) {
+                  final (id, name, emoji, species) = p;
+                  final selected = current == id;
+                  return _buildPetTile(id, name, emoji, species, selected);
+                }),
+                ..._customPets.map((id) {
+                  final selected = current == id;
+                  return _buildPetTile(id, id.toUpperCase(), '📦', 'custom', selected);
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _installCustomPet,
+              icon: const Icon(Icons.file_upload, color: Colors.white),
+              label: const Text('Install Custom Pet (.zip)', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kAccent,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPetTile(String id, String name, String emoji, String species, bool selected) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: selected ? _kAccent.withOpacity(0.15) : _kSurface,
+        border: Border.all(color: selected ? _kAccent : _kBorder),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Text(emoji, style: const TextStyle(fontSize: 30)),
+        title: Text(name, style: const TextStyle(color: _kText, fontWeight: FontWeight.w600)),
+        subtitle: Text(species, style: const TextStyle(color: _kSubtext, fontSize: 12)),
+        trailing: selected ? const Icon(Icons.check_circle, color: _kAccent) : null,
+        onTap: selected ? null : () async {
+          final repo = ref.read(petProfileRepositoryProvider);
+          final cur  = await repo.load();
+          await repo.save(cur.copyWith(petId: id, species: species));
+          ref.invalidate(petProfileProvider);
+          widget.onPetChanged();
+          if (mounted) Navigator.pop(context);
+        },
       ),
     );
   }

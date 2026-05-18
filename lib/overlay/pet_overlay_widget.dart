@@ -525,17 +525,32 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
     _screen = MediaQuery.of(context).size;
     final profileAsync = ref.watch(petProfileProvider);
 
-    return profileAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (profile) {
-        final petAsync = ref.watch(loadedPetProvider(profile.petId));
-        return petAsync.when(
-          loading: () => _buildPlaceholder(),
-          error: (_, __) => _buildPlaceholder(),
-          data: (loaded) => Stack(
-            children: [
-              Positioned(
+    // Update touchable region after rendering so that touches pass through properly
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_bubbleText != null) {
+        FlutterOverlayWindow.updateTouchableRegion(
+            0, 0, _screen.width.toInt(), _screen.height.toInt());
+      } else {
+        FlutterOverlayWindow.updateTouchableRegion(
+            _x.toInt(), _y.toInt(), (_x + _petSize).toInt(), (_y + _petSize).toInt());
+      }
+    });
+
+    return Stack(
+      children: [
+        profileAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (profile) {
+            final petAsync = ref.watch(loadedPetProvider(profile.petId));
+            return petAsync.when(
+              loading: () => _buildPlaceholder(),
+              error: (e, st) {
+                print("PET LOAD ERROR: $e");
+                return _buildPlaceholder();
+              },
+              data: (loaded) => Positioned(
                 left: _x,
                 top: _y,
                 child: Column(
@@ -579,10 +594,10 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
                   ],
                 ),
               ),
-            ],
-          ),
-        );
-      },
+            );
+          },
+        )
+      ],
     );
   }
 

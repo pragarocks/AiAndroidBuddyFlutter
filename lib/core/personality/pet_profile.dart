@@ -18,9 +18,9 @@ class PetProfile {
   });
 
   factory PetProfile.defaults() => const PetProfile(
-    petId: 'boba',
-    name: 'Boba',
-    species: 'blob',
+    petId: 'axobotl',
+    name: 'Axobotl',
+    species: 'axolotl',
     peakStat: PetStat.care,
     dumpStat: PetStat.snark,
     speechStyle: 'short and playful',

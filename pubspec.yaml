@@ -14,7 +14,8 @@ dependencies:
   flutter_tts: ^4.0.2
 
   # System overlay — floating pet window above all apps
-  flutter_overlay_window: ^0.3.0
+  flutter_overlay_window:
+    path: packages/flutter_overlay_window
 
   # Permissions
   permission_handler: ^11.3.1
@@ -26,7 +27,7 @@ dependencies:
   shared_preferences: ^2.3.2
   sqflite: ^2.3.3+1
   path: ^1.9.0
-  path_provider: ^2.1.4
+  path_provider: ^2.1.5
 
   # State management
   flutter_riverpod: ^2.5.1
@@ -46,6 +47,8 @@ dependencies:
   collection: ^1.18.0
   intl: ^0.19.0
   equatable: ^2.0.5
+  file_picker: ^11.0.2
+  archive: ^4.0.9
 
 dev_dependencies:
   flutter_test:

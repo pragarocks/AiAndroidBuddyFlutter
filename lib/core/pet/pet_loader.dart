@@ -1,14 +1,49 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'pet_state.dart';
 import 'sprite_animator.dart';
 
-/// Loads pet.json + spritesheet.webp from assets for a given pet id.
+/// Loads pet.json + spritesheet from assets or local storage for a given pet id.
 class PetLoader {
   static Future<LoadedPet> load(String petId) async {
-    final jsonStr = await rootBundle.loadString('assets/pets/$petId/pet.json');
+    String jsonStr;
+    Uint8List imageBytes;
+
+    final appDocDir = await getApplicationDocumentsDirectory();
+    final customPetDir = Directory(p.join(appDocDir.path, 'installed_pets', petId));
+
+    if (await customPetDir.exists()) {
+      // Load custom pet
+      final jsonFile = File(p.join(customPetDir.path, 'pet.json'));
+      jsonStr = await jsonFile.readAsString();
+
+      final webpFile = File(p.join(customPetDir.path, 'spritesheet.webp'));
+      final pngFile = File(p.join(customPetDir.path, 'spritesheet.png'));
+      if (await webpFile.exists()) {
+        imageBytes = await webpFile.readAsBytes();
+      } else if (await pngFile.exists()) {
+        imageBytes = await pngFile.readAsBytes();
+      } else {
+        throw Exception('Custom pet missing spritesheet image');
+      }
+    } else {
+      // Load bundled pet
+      jsonStr = await rootBundle.loadString('assets/pets/$petId/pet.json');
+      
+      try {
+        final byteData = await rootBundle.load('assets/pets/$petId/spritesheet.webp');
+        imageBytes = byteData.buffer.asUint8List();
+      } catch (e) {
+        final byteData = await rootBundle.load('assets/pets/$petId/spritesheet.png');
+        imageBytes = byteData.buffer.asUint8List();
+      }
+    }
+
     final json = jsonDecode(jsonStr) as Map<String, dynamic>;
 
     final frameSize = json['frameSize'] as Map<String, dynamic>;
@@ -43,10 +78,7 @@ class PetLoader {
           animations[PetState.waiting] ?? animations[PetState.idle]!;
     }
 
-    final byteData =
-        await rootBundle.load('assets/pets/$petId/spritesheet.webp');
-    final codec =
-        await ui.instantiateImageCodec(byteData.buffer.asUint8List());
+    final codec = await ui.instantiateImageCodec(imageBytes);
     final frame = await codec.getNextFrame();
 
     return LoadedPet(
