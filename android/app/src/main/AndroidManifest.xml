@@ -34,6 +34,9 @@
 
     <!-- Post notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
+    <!-- Schedule exact alarms for reminders (Android 12+) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Internet — optional, for pet pack updates -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -64,7 +67,11 @@
         <!-- Flutter overlay window service -->
         <service 
             android:name="flutter.overlay.window.flutter_overlay_window.OverlayService" 
-            android:exported="false" />
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property android:name="android.app.property.SPECIAL_USE_FGS_SUBTYPE"
+                      android:value="Displaying pet overlay over other apps" />
+        </service>
 
         <!-- Notification Listener Service -->
         <service
