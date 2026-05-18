@@ -61,16 +61,10 @@
             </intent-filter>
         </activity>
 
-        <!-- Flutter overlay entry point (flutter_overlay_window) -->
-        <activity
-            android:name="com.example.flutter_overlay_window.OverlayEntryPoint"
-            android:exported="false"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
-            <!-- Tells the plugin which Dart function to call for the overlay -->
-            <meta-data
-                android:name="overlay_main"
-                android:value="overlayMain" />
-        </activity>
+        <!-- Flutter overlay window service -->
+        <service 
+            android:name="flutter.overlay.window.flutter_overlay_window.OverlayService" 
+            android:exported="false" />
 
         <!-- Notification Listener Service -->
         <service

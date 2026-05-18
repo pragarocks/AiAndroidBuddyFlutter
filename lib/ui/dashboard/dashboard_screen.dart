@@ -59,7 +59,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
 
   Future<void> _refresh() async {
     final g = await FlutterOverlayWindow.isPermissionGranted();
-    if (mounted) setState(() => _overlayGranted = g);
+    final r = await FlutterOverlayWindow.isActive();
+    if (mounted) setState(() { 
+      _overlayGranted = g; 
+      _petRunning = r;
+    });
   }
 
   // ── Overlay control ────────────────────────────────────────────────────
