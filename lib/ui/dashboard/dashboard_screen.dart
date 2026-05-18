@@ -393,6 +393,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
         final cur = await repo.load();
         await repo.save(cur.copyWith(petId: newPetId, species: 'custom'));
         ref.invalidate(petProfileProvider);
+        await FlutterOverlayWindow.shareData({'action': 'changePet', 'petId': newPetId});
         widget.onPetChanged();
       }
     } catch (e) {
@@ -469,6 +470,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
           final cur  = await repo.load();
           await repo.save(cur.copyWith(petId: id, species: species));
           ref.invalidate(petProfileProvider);
+          await FlutterOverlayWindow.shareData({'action': 'changePet', 'petId': id});
           widget.onPetChanged();
           if (mounted) Navigator.pop(context);
         },

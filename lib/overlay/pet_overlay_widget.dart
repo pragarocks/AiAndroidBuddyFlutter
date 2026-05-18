@@ -88,6 +88,7 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
 
   // ── Pet animation state ──────────────────────────────────────────────────────
   PetState _currentPetState = PetState.idle;
+  String? _activePetId;
 
   final _rng = Random();
 
@@ -95,7 +96,18 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
   void initState() {
     super.initState();
     FlutterOverlayWindow.overlayListener.listen(_onOverlayMessage);
+    _loadInitialPet();
     _scheduleIdleRoam();
+  }
+
+  Future<void> _loadInitialPet() async {
+    try {
+      final repo = ref.read(petProfileRepositoryProvider);
+      final profile = await repo.load();
+      if (mounted) {
+        setState(() => _activePetId = profile.petId);
+      }
+    } catch (_) {}
   }
 
   @override
@@ -118,6 +130,11 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
       if (action == 'showBubble') {
         final text = message['text'] as String?;
         if (text != null && mounted) setState(() => _bubbleText = text);
+      } else if (action == 'changePet') {
+        final petId = message['petId'] as String?;
+        if (petId != null && mounted) {
+          setState(() => _activePetId = petId);
+        }
       }
     }
   }
@@ -537,13 +554,13 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
       }
     });
 
+    final petId = _activePetId ?? 'axobotl';
+
     return Stack(
       children: [
-        profileAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-          data: (profile) {
-            final petAsync = ref.watch(loadedPetProvider(profile.petId));
+        Builder(
+          builder: (context) {
+            final petAsync = ref.watch(loadedPetProvider(petId));
             return petAsync.when(
               loading: () => _buildPlaceholder(),
               error: (e, st) {
@@ -579,16 +596,25 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
                           _y = (_y + d.delta.dy).clamp(0.0, max(0.0, _screen.height - _petSize));
                         });
                       },
-                      child: Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity()
-                          ..scale(_flipX ? -_scale : _scale, _scale),
-                        child: AnimatedPetWidget(
-                          spritesheet: loaded.spritesheet,
-                          config: loaded.config,
-                          currentState: _currentPetState,
-                          size: _petSize,
-                        ),
+                      child: Builder(
+                        builder: (context) {
+                          final runLeft = loaded.config.animations[PetState.runLeft];
+                          final runRight = loaded.config.animations[PetState.runRight];
+                          final hasSeparateWalk = runLeft != null && runRight != null && runLeft.row != runRight.row;
+                          final shouldFlip = _flipX && !hasSeparateWalk;
+
+                          return Transform(
+                            alignment: Alignment.center,
+                            transform: Matrix4.identity()
+                              ..scale(shouldFlip ? -_scale : _scale, _scale),
+                            child: AnimatedPetWidget(
+                              spritesheet: loaded.spritesheet,
+                              config: loaded.config,
+                              currentState: _currentPetState,
+                              size: _petSize,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
