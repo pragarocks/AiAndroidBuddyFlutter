@@ -225,6 +225,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   void _showSettings(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: _kSurface,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),

@@ -190,7 +190,7 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
       _setAnim(goRight ? PetState.runRight : PetState.runLeft);
       final dp = _kWalkStepDp * (goRight ? 1 : -1);
       setState(() {
-        _x = (_x + dp).clamp(0, _screen.width - _petSize);
+        _x = (_x + dp).clamp(0.0, max(0.0, _screen.width - _petSize));
         _flipX = !goRight;
       });
 
@@ -281,7 +281,7 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
         if (!mounted) { t.cancel(); return; }
         _setAnim(runState);
         final dp = _kRunStepDp * (goRight ? 1 : -1);
-        setState(() => _x = (_x + dp).clamp(0, _screen.width - _petSize));
+        setState(() => _x = (_x + dp).clamp(0.0, max(0.0, _screen.width - _petSize)));
         final hitBorder = (goRight && _x >= _screen.width - _petSize) ||
             (!goRight && _x <= 0);
         if (hitBorder) {
@@ -330,8 +330,8 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
     _behaviorTimer = Timer.periodic(const Duration(milliseconds: 30), (t) {
       if (!mounted) { t.cancel(); return; }
       setState(() {
-        _x = (_x + dx).clamp(0, _screen.width - _petSize);
-        _y = (_y + dy).clamp(0, _screen.height - _petSize);
+        _x = (_x + dx).clamp(0.0, max(0.0, _screen.width - _petSize));
+        _y = (_y + dy).clamp(0.0, max(0.0, _screen.height - _petSize));
       });
       step++;
       if (step >= steps) {
@@ -370,8 +370,8 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
       _behaviorTimer = Timer.periodic(const Duration(milliseconds: 28), (t) {
         if (!mounted) { t.cancel(); return; }
         setState(() {
-          _x = (_x + dx).clamp(0, _screen.width - _petSize);
-          _y = (_y + dy).clamp(0, _screen.height - _petSize);
+          _x = (_x + dx).clamp(0.0, max(0.0, _screen.width - _petSize));
+          _y = (_y + dy).clamp(0.0, max(0.0, _screen.height - _petSize));
         });
         step++;
         if (step >= steps) {
@@ -560,8 +560,8 @@ class _PetOverlayWidgetState extends ConsumerState<PetOverlayWidget>
                         _sleepTimer?.cancel();
                         _resetIdleTimer();
                         setState(() {
-                          _x = (_x + d.delta.dx).clamp(0, _screen.width - _petSize);
-                          _y = (_y + d.delta.dy).clamp(0, _screen.height - _petSize);
+                          _x = (_x + d.delta.dx).clamp(0.0, max(0.0, _screen.width - _petSize));
+                          _y = (_y + d.delta.dy).clamp(0.0, max(0.0, _screen.height - _petSize));
                         });
                       },
                       child: Transform(
