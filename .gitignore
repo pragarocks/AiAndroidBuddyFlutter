@@ -1,0 +1,46 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+*.g.dart
+*.freezed.dart
+
+# Android
+android/local.properties
+android/.gradle/
+android/app/build/
+android/gradle/wrapper/gradle-wrapper.jar
+*.apk
+*.aab
+*.jks
+*.keystore
+keystore.properties
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# AI models (downloaded at runtime, too large for git)
+assets/models/
+**/*.onnx
+**/*.mnn
+**/*.bin
+**/*.tflite
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Env
+.env
+local.properties
+
+# Claude Code
+.claude/

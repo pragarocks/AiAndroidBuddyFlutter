@@ -1,0 +1,70 @@
+name: pocket_pet
+description: AI Android Buddy — a pixel-art pet that lives on your screen, tracks screen time and nudges you to take breaks.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # TTS — pet speaks nudges and reminders (uses Android built-in TTS engine)
+  flutter_tts: ^4.0.2
+
+  # System overlay — floating pet window above all apps
+  flutter_overlay_window: ^0.3.0
+
+  # Permissions
+  permission_handler: ^11.3.1
+
+  # Local notifications
+  flutter_local_notifications: ^17.2.1
+
+  # Persistent storage
+  shared_preferences: ^2.3.2
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  path_provider: ^2.1.4
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^14.2.7
+
+  # JSON serialization
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Timezone — required by flutter_local_notifications for scheduled alarms
+  timezone: ^0.9.4
+
+  # Utilities
+  collection: ^1.18.0
+  intl: ^0.19.0
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.0
+  mockito: ^5.4.4
+  fake_async: ^1.3.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/pets/boba/
+    - assets/pets/axobotl/
+    - assets/pets/bitboy/
+    - assets/pets/nova_byte/
+    - assets/pets/valkyrie/
+    - assets/pets/snuglet/
+    - assets/pets/review-owl/
